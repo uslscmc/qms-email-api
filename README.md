@@ -1,0 +1,81 @@
+# QMS Email API
+
+Vercel serverless function that sends QMS notification emails over Gmail SMTP.
+It is the mail backend for the **QMS (Queue Management System)** at USLS CMC.
+
+The CodeIgniter app posts JSON to this endpoint; this function renders the email
+and relays it through Gmail.
+
+```
+QMS (CodeIgniter)                      Vercel                    Gmail SMTP
+────────────────                      ──────                    ──────────
+notifyNewRequest()        ─┐
+notifyAssignedTask()      ─┼─ POST JSON ─► /api/notify ─► sendMail() ─► 📧
+notifyRequester()         ─┘
+```
+
+## Endpoint
+
+```
+POST https://<your-vercel-domain>/api/notify
+Content-Type: application/json
+```
+
+### Events
+
+| `event`      | Email sent                                   |
+| ------------ | -------------------------------------------- |
+| `assignment` | "Task Assignment Notice" to the assignee     |
+| _(anything else / omitted)_ | "New QMS Request" to the notify inbox |
+
+### Example payload
+
+```json
+{
+  "event": "assignment",
+  "code": "QMS-2026-0001",
+  "name": "Juan Dela Cruz",
+  "email": "juan@usls.edu.ph",
+  "classification": "Faculty",
+  "contact": "0917...",
+  "title": "Poster for Founders Week",
+  "patype": 1,
+  "platform": ["Facebook", "Instagram"],
+  "date": "2026-10-30",
+  "message": "Please make a poster...",
+  "assignee_name": "Staff Name",
+  "assignee_email": "staff@usls.edu.ph"
+}
+```
+
+Optional `"recipients": ["a@x.com", "b@y.com"]` overrides the default recipient.
+
+## Environment variables
+
+Set these in the Vercel project dashboard (Project → Settings → Environment Variables).
+
+| Variable    | Required | Default          | Notes                                              |
+| ----------- | -------- | ---------------- | -------------------------------------------------- |
+| `SMTP_USER` | yes      | –                | Gmail sender account, e.g. `qms@usls.edu.ph`       |
+| `SMTP_PASS` | yes      | –                | Gmail **app password** (normal password is rejected) |
+| `SMTP_HOST` | no       | `smtp.gmail.com` | SMTP host                                          |
+| `SMTP_PORT` | no       | `465`            | SMTP port (SSL)                                    |
+| `NOTIFY_TO` | no       | `SMTP_USER`      | Fallback recipient                                 |
+
+## Deploy
+
+```bash
+npm i -g vercel
+vercel link       # link to the uslscmc Vercel project
+vercel --prod     # deploy
+```
+
+`vercel.json` registers `api/notify.js` with a 10s max duration.
+
+## Connect it to the QMS app
+
+In the QMS CodeIgniter app's `.env`, point `qms.notifyUrl` at the deployed endpoint:
+
+```
+qms.notifyUrl = https://<your-vercel-domain>/api/notify
+```

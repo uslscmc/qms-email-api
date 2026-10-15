@@ -1,0 +1,10 @@
+# dependencies
+node_modules/
+
+# vercel
+.vercel
+
+# local env files (secrets) - configure these in the Vercel dashboard instead
+.env
+.env.local
+.env.*.local
