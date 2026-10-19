@@ -8,3 +8,6 @@ node_modules/
 .env
 .env.local
 .env.*.local
+
+# local-only secret docs (e.g. Vercel env vars to paste)
+*.local.md
