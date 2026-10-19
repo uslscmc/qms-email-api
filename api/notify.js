@@ -121,10 +121,14 @@ const detailsTable = (b, nameKey, emailKey) => {
   ].join("");
 
   return `
-      <table role="presentation" width="100%" style="width:100%;border-collapse:collapse">
+      <table role="presentation" width="100%" style="width:100%;border-collapse:separate">
         <tr>
-          <td width="50%" style="width:50%;vertical-align:top;padding-right:14px">${left}</td>
-          <td width="50%" style="width:50%;vertical-align:top;padding-left:14px">${right}</td>
+          <td width="50%" style="width:50%;vertical-align:top;padding-right:8px">
+            <div style="background:#f8fafc;border:1px solid #eef2f7;border-radius:8px;padding:16px 16px 4px">${left}</div>
+          </td>
+          <td width="50%" style="width:50%;vertical-align:top;padding-left:8px">
+            <div style="background:#f8fafc;border:1px solid #eef2f7;border-radius:8px;padding:16px 16px 4px">${right}</div>
+          </td>
         </tr>
       </table>`;
 };
@@ -147,8 +151,8 @@ const consoleButton = () => `
       </div>`;
 
 const footer = () => `
-      <div style="border-top:1px solid #e2e8f0;background:#f8fafc;padding:14px 28px;margin-top:20px">
-        <p style="margin:0 0 4px;font-size:11px;color:#94a3b8;line-height:1.5">&copy; QMS V3 - 2026 &nbsp;&nbsp; University of St. La Salle, La Salle Avenue, Bacolod City 6100, Negros Occidental, Philippines | +63 34 434 6100</p>
+      <div style="border-top:1px solid #e2e8f0;background:#f8fafc;padding:14px 28px;margin-top:20px;text-align:center">
+        <p style="margin:0 0 2px;font-size:11px;color:#94a3b8;line-height:1.5">&copy; QMS V3 - 2026</p>
         <p style="margin:0;font-size:11px;color:#94a3b8">Center for Marketing and Communications &bull; Privacy Policy</p>
       </div>`;
 
@@ -157,7 +161,7 @@ const textFooter = () =>
     "",
     `Admin Console: ${CONSOLE_URL}`,
     "",
-    "\u00A9 QMS V3 - 2026   University of St. La Salle, La Salle Avenue, Bacolod City 6100, Negros Occidental, Philippines | +63 34 434 6100",
+    "\u00A9 QMS V3 - 2026",
     "Center for Marketing and Communications \u2022 Privacy Policy",
   ].join("\n");
 
