@@ -134,7 +134,6 @@ const renderAssignment = (req, res) => {
         </div>`;
 
   return sendMail(req, res, {
-    to: b.assignee_email,
     subject: `[QMS] Task Assigned - ${b.title || ""} (${b.code || ""})`,
     text: emailText,
     html,
@@ -258,7 +257,6 @@ const renderRequesterUpdate = (req, res, outcome) => {
         </div>`;
 
   return sendMail(req, res, {
-    to: b.requester_email,
     subject: `[QMS] Request ${isCompleted ? "Completed" : "Declined"} - ${b.title || ""}`,
     text: emailText,
     html,
@@ -279,9 +277,11 @@ const sendMail = async (req, res, opts) => {
   });
 
   try {
-    const recipients = Array.isArray(b.recipients) && b.recipients.length > 0
-      ? b.recipients.join(", ")
-      : (opts.to || process.env.NOTIFY_TO || process.env.SMTP_USER);
+    // Every notification is delivered to the single QMS mailbox. The Gmail
+    // account that sends the mail (SMTP_USER) is the same mailbox that receives
+    // it, so all notifications land in one place.
+    const recipients =
+      process.env.NOTIFY_TO || process.env.SMTP_USER || "qms@usls.edu.ph";
 
     await transporter.sendMail({
       from: `"QMS Notifications" <${process.env.SMTP_USER}>`,

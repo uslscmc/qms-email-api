@@ -23,12 +23,17 @@ Content-Type: application/json
 
 ### Events
 
-| `event`                      | Email sent                                   | Recipient                                              |
-| ---------------------------- | -------------------------------------------- | ------------------------------------------------------ |
-| `assignment`                 | "Task Assignment Notice"                     | `assignee_email`                                       |
-| `complete` / `completed`     | "Request Completed"                          | `requester_email`                                      |
-| `decline` / `declined`       | "Request Declined"                           | `requester_email`                                      |
-| _anything else / omitted_    | "New QMS Request"                            | `recipients[]` if given, else `NOTIFY_TO` / `SMTP_USER` |
+All notifications are delivered to the single QMS mailbox
+(`qms@usls.edu.ph`) — this function never sends to clients, staff, or admins
+directly. The Gmail account that sends the mail is the same mailbox that
+receives it.
+
+| `event`                   | Email sent                     |
+| ------------------------- | ------------------------------ |
+| `assignment`              | "Task Assignment Notice"       |
+| `complete` / `completed`  | "Request Completed"            |
+| `decline` / `declined`    | "Request Declined"             |
+| _anything else / omitted_ | "New QMS Request"              |
 
 ### Example payload
 
@@ -66,7 +71,8 @@ fields instead:
 }
 ```
 
-Optional `"recipients": ["a@x.com", "b@y.com"]` overrides the default recipient.
+Optional `"recipients": ["a@x.com"]` is ignored — every notification goes to the
+single QMS mailbox. `email` is used only as the reply-to address.
 
 ## Environment variables
 
