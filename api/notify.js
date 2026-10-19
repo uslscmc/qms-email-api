@@ -257,7 +257,7 @@ const renderNewRequest = (req, res) => {
   });
 
   return sendMail(req, res, {
-    subject: `[QMS] New Request - ${b.title || ""} (${b.code || ""})`,
+    subject: `[QMS] New Request - ${b.title || ""}`,
     text: emailText,
     html,
   });
@@ -301,7 +301,7 @@ const renderAssignment = (req, res) => {
 
   return sendMail(req, res, {
     to: b.assignee_email,
-    subject: `[QMS] Task Assigned - ${b.title || ""} (${b.code || ""})`,
+    subject: `[QMS] Task Assigned - ${b.title || ""}`,
     text: emailText,
     html,
   });
