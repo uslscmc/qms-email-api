@@ -201,7 +201,7 @@ const textFooter = () =>
 const layout = ({ accent, heading, subheading, greeting, intro, body, admin = false }) => `
     <div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:0 auto;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden">
       <div style="background:${accent};padding:22px 28px;text-align:center">
-        <img src="${LOGO_URL}" alt="QMS" width="60" style="display:block;margin:0 auto 12px;width:60px;max-width:60px;height:auto;border:0" />
+        <img src="${LOGO_URL}" alt="QMS" width="200" style="display:block;margin:0 auto 14px;width:200px;max-width:200px;height:auto;border:0" />
         <h2 style="margin:0;color:#ffffff;font-size:20px;text-transform:uppercase">${heading}</h2>
         ${subheading ? `<p style="margin:4px 0 0;color:rgba(255,255,255,.85);font-size:13px">${subheading}</p>` : ""}
       </div>
@@ -312,7 +312,7 @@ const renderRequesterUpdate = (req, res, outcome) => {
   const isCompleted = outcome === "completed";
 
   const heading = isCompleted ? "Request Completed" : "Request Declined";
-  const accent = isCompleted ? "#15803d" : "#b91c1c";
+  const accent = isCompleted ? "#15803d" : "linear-gradient(90deg,#5c0016,#800020)";
   const label = isCompleted ? "Remarks" : "Reason";
 
   const summary = isCompleted
