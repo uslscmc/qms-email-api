@@ -316,8 +316,8 @@ const renderRequesterUpdate = (req, res, outcome) => {
   const label = isCompleted ? "Remarks" : "Reason";
 
   const summary = isCompleted
-    ? "Good news \u2014 your request has been completed by our team. You may now coordinate with the CMC for the finished output."
-    : "We regret to inform you that your request has been declined. Please see the remarks below for the details.";
+    ? "Good news! Your request has been completed. For any clarifications & inquiries, please contact us at Local 146."
+    : "We regret to inform you that your request has been declined. Please refer to the remarks below for details. For any inquiries or clarifications, please contact the CMC at Local 146.\nThank you.";
 
   const emailText = [
     isCompleted ? "REQUEST COMPLETED" : "REQUEST DECLINED",
@@ -348,7 +348,7 @@ const renderRequesterUpdate = (req, res, outcome) => {
     heading,
     subheading: "An update on your QMS request",
     greeting: b.requester_name,
-    intro: summary,
+    intro: escapeHtml(summary).replace(/\n/g, "<br>"),
     body:
       detailsTable(b, "requester_name", "requester_email") +
       titleBlock(b) +
@@ -365,12 +365,15 @@ const renderRequesterUpdate = (req, res, outcome) => {
 const renderForgotPassword = (req, res) => {
   const b = req.body || {};
 
+  const summary =
+    "You requested your QMS sign-in details. Please use the password provided below to access your account.\nThank you.";
+
   const emailText = [
     "PASSWORD RECOVERY",
     "",
     `Hi ${b.name || "there"},`,
     "",
-    "You requested your QMS sign-in details. Use the password below to sign in.",
+    summary,
     "",
     `Email    : ${b.email || "N/A"}`,
     `Password : ${b.password || "N/A"}`,
@@ -387,8 +390,7 @@ const renderForgotPassword = (req, res) => {
     heading: "Password Recovery",
     subheading: "Your QMS sign-in details",
     greeting: b.name,
-    intro:
-      "You requested your QMS sign-in details. Use the password below to sign in.",
+    intro: escapeHtml(summary).replace(/\n/g, "<br>"),
     body: `
       <div style="border-top:1px solid #e2e8f0;padding-top:16px">
         ${field("Email", escapeHtml(b.email) || "N/A")}
