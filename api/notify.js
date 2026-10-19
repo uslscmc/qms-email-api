@@ -18,9 +18,19 @@ module.exports = async function handler(req, res) {
   }
 
   const b = req.body || {};
+  const event = String(b.event || "").toLowerCase();
 
-  if (b.event === "assignment") {
+  if (event === "assignment") {
     return renderAssignment(req, res);
+  }
+
+  // The CI4 app sends event "complete" or "decline" (see Dashboard::notifyRequester)
+  if (event === "complete" || event === "completed") {
+    return renderRequesterUpdate(req, res, "completed");
+  }
+
+  if (event === "decline" || event === "declined") {
+    return renderRequesterUpdate(req, res, "declined");
   }
 
   return renderNewRequest(req, res);
@@ -124,6 +134,7 @@ const renderAssignment = (req, res) => {
         </div>`;
 
   return sendMail(req, res, {
+    to: b.assignee_email,
     subject: `[QMS] Task Assigned - ${b.title || ""} (${b.code || ""})`,
     text: emailText,
     html,
@@ -183,6 +194,72 @@ const renderNewRequest = (req, res) => {
 
   return sendMail(req, res, {
     subject: `[QMS] New Request - ${b.title || ""} (${b.code || ""})`,
+    text: emailText,
+    html,
+  });
+};
+
+const renderRequesterUpdate = (req, res, outcome) => {
+  const b = req.body || {};
+  const isCompleted = outcome === "completed";
+
+  const heading = isCompleted ? "Request Completed" : "Request Declined";
+  const accent = isCompleted ? "#15803d" : "#b91c1c";
+  const accentSubtle = isCompleted ? "#bbf7d0" : "#fecaca";
+
+  const summary = isCompleted
+    ? "Good news \u2014 your request has been completed by our team. You may now coordinate with the CMC for the finished output."
+    : "We regret to inform you that your request has been declined. Please see the remarks below for the details.";
+
+  const emailText = [
+    isCompleted ? "REQUEST COMPLETED" : "REQUEST DECLINED",
+    ``,
+    `Hi ${b.requester_name || "there"},`,
+    ``,
+    summary,
+    ``,
+    `Title           : ${b.title || "N/A"}`,
+    `Desk            : ${typeLabel(b)}`,
+    `Platform        : ${(b.platform || []).join(", ") || "N/A"}`,
+    `Date            : ${formatDate(b.date)}`,
+    ``,
+    isCompleted ? `Remarks:` : `Reason:`,
+    `${stripHtml(b.message) || "N/A"}`,
+  ].join("\n");
+
+  const rows = [
+    ["Title", b.title || "N/A"],
+    ["Desk", typeLabel(b)],
+    ["Platform", (b.platform || []).map(badge).join("") || "N/A"],
+    ["Date", formatDate(b.date)],
+  ]
+    .map(
+      ([k, v]) =>
+        `<tr><td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;color:#64748b;width:38%;vertical-align:top"><strong>${k}</strong></td>` +
+        `<td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;color:#0f172a">${String(v)}</td></tr>`,
+    )
+    .join("");
+
+  const html = `
+        <div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:0 auto;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden">
+            <div style="background:${accent};padding:20px 28px">
+                <h2 style="margin:0;color:#fff;font-size:20px;text-transform:uppercase">${heading}</h2>
+                <p style="margin:4px 0 0;color:${accentSubtle};font-size:13px">An update on your QMS request</p>
+            </div>
+            <div style="padding:20px 28px">
+                <p style="margin:0 0 4px;font-size:15px;color:#0f172a">Hi <strong>${b.requester_name || "there"}</strong>,</p>
+                <p style="margin:0 0 18px;font-size:13px;color:#334155;line-height:1.5">${summary}</p>
+                <table style="border-collapse:collapse;width:100%;font-size:13px">${rows}</table>
+                <hr style="border:none;border-top:1px solid #e2e8f0;margin:18px 0">
+                <p style="margin:0 0 6px;font-size:12px;font-weight:bold;color:#334155;text-transform:uppercase">${isCompleted ? "Remarks" : "Reason"}</p>
+                <div style="margin:0;font-size:13px;color:#0f172a;line-height:1.5">${b.message || "N/A"}</div>
+                <p style="margin:20px 0 0;font-size:11px;color:#94a3b8">Sent by Queue Management System \u2014 usls.edu.ph/qms</p>
+            </div>
+        </div>`;
+
+  return sendMail(req, res, {
+    to: b.requester_email,
+    subject: `[QMS] Request ${isCompleted ? "Completed" : "Declined"} - ${b.title || ""}`,
     text: emailText,
     html,
   });

@@ -23,10 +23,12 @@ Content-Type: application/json
 
 ### Events
 
-| `event`      | Email sent                                   |
-| ------------ | -------------------------------------------- |
-| `assignment` | "Task Assignment Notice" to the assignee     |
-| _(anything else / omitted)_ | "New QMS Request" to the notify inbox |
+| `event`                      | Email sent                                   | Recipient                                              |
+| ---------------------------- | -------------------------------------------- | ------------------------------------------------------ |
+| `assignment`                 | "Task Assignment Notice"                     | `assignee_email`                                       |
+| `complete` / `completed`     | "Request Completed"                          | `requester_email`                                      |
+| `decline` / `declined`       | "Request Declined"                           | `requester_email`                                      |
+| _anything else / omitted_    | "New QMS Request"                            | `recipients[]` if given, else `NOTIFY_TO` / `SMTP_USER` |
 
 ### Example payload
 
@@ -45,6 +47,22 @@ Content-Type: application/json
   "message": "Please make a poster...",
   "assignee_name": "Staff Name",
   "assignee_email": "staff@usls.edu.ph"
+}
+```
+
+For a status update, send `event` of `complete`/`decline` with the requester
+fields instead:
+
+```json
+{
+  "event": "complete",
+  "requester_name": "Juan Dela Cruz",
+  "requester_email": "juan@usls.edu.ph",
+  "title": "Poster for Founders Week",
+  "patype": 1,
+  "platform": ["Facebook"],
+  "date": "2026-10-30",
+  "message": "Remarks from the assigned staff"
 }
 ```
 
