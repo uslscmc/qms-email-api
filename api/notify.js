@@ -266,10 +266,15 @@ const renderRequesterUpdate = (req, res, outcome) => {
 const sendMail = async (req, res, opts) => {
   const b = req.body || {};
 
+  // Port 465 uses implicit TLS (secure: true). Ports 587/25 use STARTTLS
+  // (secure: false) and are upgraded automatically by nodemailer. Deriving
+  // `secure` from the port avoids the "wrong version number" TLS error that
+  // happens when SMTP_PORT is 587 but secure is forced to true.
+  const port = Number(process.env.SMTP_PORT || 465);
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || "smtp.gmail.com",
-    port: Number(process.env.SMTP_PORT || 465),
-    secure: true,
+    port,
+    secure: port === 465,
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
