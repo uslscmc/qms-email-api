@@ -28,15 +28,21 @@ Content-Type: application/json
 | `assignment`              | "Task Assignment Notice"  | the assignee (`assignee_email`)    |
 | `complete` / `completed`  | "Request Completed"       | `qms@usls.edu.ph`                  |
 | `decline` / `declined`    | "Request Declined"        | `qms@usls.edu.ph`                  |
+| `forgot_password`         | "Password Recovery"       | the client (`email`)               |
 | _anything else / omitted_ | "New QMS Request"         | `qms@usls.edu.ph`                  |
 
-All four emails share one layout:
+Every email shares one layout:
 
+- the **QMS logo** in the header (`QMS_LOGO_URL`)
 - a **two-column** details block — left: Requester, Email, Office, Contact;
   right: Desk, Platform, Date Needed
 - the **Date Needed** value shown as a burgundy badge (`#800020`)
-- a button linking to the **QMS admin console**
-- the USLS CMC footer
+- a footer linking to **Center for Marketing and Communications** and
+  **Privacy Policy**
+
+The **QMS admin console** button is shown only on the two admin-facing emails
+(New Request and Task Assigned). Completed, Declined and Password Recovery are
+client-facing and have no console button.
 
 `classification` is displayed as **Office** (it holds the office/department/college).
 
@@ -78,9 +84,20 @@ fields instead:
 }
 ```
 
-`"recipients": [...]` is ignored. Only the `assignment` event uses an explicit
-recipient (`assignee_email`); everything else goes to the single QMS mailbox.
-There is no Reply-To header.
+`"recipients": [...]` is ignored. The `assignment` event sends to
+`assignee_email` and `forgot_password` sends to `email`; every other event goes
+to the single QMS mailbox. There is no Reply-To header.
+
+Password recovery payload (client receives their stored password):
+
+```json
+{
+  "event": "forgot_password",
+  "name": "Juan Dela Cruz",
+  "email": "juan@usls.edu.ph",
+  "password": "the-stored-password"
+}
+```
 
 ## Environment variables
 
@@ -94,6 +111,8 @@ Set these in the Vercel project dashboard (Project → Settings → Environment 
 | `SMTP_PORT`       | no       | `465`            | 465 = implicit TLS, 587 = STARTTLS (auto-detected)   |
 | `NOTIFY_TO`       | no       | `SMTP_USER`      | Fallback recipient                                   |
 | `QMS_CONSOLE_URL` | no       | `https://usls.edu.ph/qms/index.php/console` | Admin console link used in emails |
+| `QMS_LOGIN_URL`   | no       | `https://usls.edu.ph/qms/client_auth` | Client sign-in link used in the recovery email |
+| `QMS_LOGO_URL`    | no       | `https://usls.edu.ph/qms/assets/img/qms-white.png` | Logo shown in the email header |
 
 ## Deploy
 

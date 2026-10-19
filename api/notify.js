@@ -7,12 +7,21 @@
 //   SMTP_USER   (e.g. qms@usls.edu.ph)
 //   SMTP_PASS   (Gmail app password - REQUIRED)
 //   NOTIFY_TO   (default recipient; defaults to SMTP_USER)
-//   QMS_CONSOLE_URL (admin console link used in emails)
+//   QMS_CONSOLE_URL (admin console link used in admin emails)
+//   QMS_LOGIN_URL   (client sign-in link used in the recovery email)
+//   QMS_LOGO_URL    (logo shown in the email header)
 
 const nodemailer = require("nodemailer");
 
 const CONSOLE_URL =
   process.env.QMS_CONSOLE_URL || "https://usls.edu.ph/qms/index.php/console";
+const LOGIN_URL =
+  process.env.QMS_LOGIN_URL || "https://usls.edu.ph/qms/client_auth";
+const LOGO_URL =
+  process.env.QMS_LOGO_URL || "https://usls.edu.ph/qms/assets/img/qms-white.png";
+
+const CMC_URL = "https://www.usls.edu.ph/cmc";
+const PRIVACY_URL = "https://www.usls.edu.ph/privacy-policy";
 
 // Burgundy used for the "Date Needed" badge.
 const BURGUNDY = "#800020";
@@ -38,6 +47,17 @@ module.exports = async function handler(req, res) {
 
   if (event === "decline" || event === "declined") {
     return renderRequesterUpdate(req, res, "declined");
+  }
+
+  // Password recovery request from the client sign-in page
+  // (see Authentication::recovery)
+  if (
+    event === "forgot_password" ||
+    event === "forgot-password" ||
+    event === "recovery" ||
+    event === "password_recovery"
+  ) {
+    return renderForgotPassword(req, res);
   }
 
   return renderNewRequest(req, res);
@@ -134,7 +154,7 @@ const detailsTable = (b, nameKey, emailKey) => {
 };
 
 const titleBlock = (b) => `
-      <div style="border-top:1px solid #e2e8f0;padding-top:16px;margin-top:4px">
+      <div style="border-top:1px solid #e2e8f0;padding-top:16px;margin-top:16px">
         <div style="font-size:11px;font-weight:bold;letter-spacing:.4px;text-transform:uppercase;color:#64748b;margin-bottom:4px">Title</div>
         <h3 style="margin:0;color:#0f172a;font-size:16px;line-height:1.45">${escapeHtml(b.title) || "Untitled"}</h3>
       </div>`;
@@ -145,38 +165,51 @@ const messageBlock = (label, html) => `
         <div style="font-size:13px;color:#0f172a;line-height:1.55">${html || "N/A"}</div>
       </div>`;
 
+// Admin-only call to action. Shown only on the admin-facing emails
+// (New Request and Task Assigned), never on client-facing ones.
 const consoleButton = () => `
       <div style="text-align:center;margin:26px 0 6px">
         <a href="${CONSOLE_URL}" style="display:inline-block;background:#1d4ed8;color:#ffffff;text-decoration:none;font-size:13px;font-weight:bold;padding:11px 24px;border-radius:6px">Open QMS Admin Console</a>
       </div>`;
 
+const loginButton = () => `
+      <div style="text-align:center;margin:22px 0 6px">
+        <a href="${LOGIN_URL}" style="display:inline-block;background:#1d4ed8;color:#ffffff;text-decoration:none;font-size:13px;font-weight:bold;padding:11px 24px;border-radius:6px">Sign In to QMS</a>
+      </div>`;
+
 const footer = () => `
       <div style="border-top:1px solid #e2e8f0;background:#f8fafc;padding:14px 28px;margin-top:20px;text-align:center">
         <p style="margin:0 0 2px;font-size:11px;color:#94a3b8;line-height:1.5">&copy; QMS V3 - 2026</p>
-        <p style="margin:0;font-size:11px;color:#94a3b8">Center for Marketing and Communications &bull; Privacy Policy</p>
+        <p style="margin:0;font-size:11px;color:#94a3b8">
+          <a href="${CMC_URL}" style="color:#1d4ed8;text-decoration:none">Center for Marketing and Communications</a>
+          <span style="color:#cbd5e1"> &bull; </span>
+          <a href="${PRIVACY_URL}" style="color:#1d4ed8;text-decoration:none">Privacy Policy</a>
+        </p>
       </div>`;
 
 const textFooter = () =>
   [
     "",
-    `Admin Console: ${CONSOLE_URL}`,
+    "Center for Marketing and Communications: " + CMC_URL,
+    "Privacy Policy: " + PRIVACY_URL,
     "",
     "\u00A9 QMS V3 - 2026",
-    "Center for Marketing and Communications \u2022 Privacy Policy",
   ].join("\n");
 
-// Shared outer shell so all four emails look consistent.
-const layout = ({ accent, heading, subheading, greeting, intro, body }) => `
+// Shared outer shell so all emails look consistent. The QMS logo sits on top of
+// the coloured header. `admin` controls the console button.
+const layout = ({ accent, heading, subheading, greeting, intro, body, admin = false }) => `
     <div style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:0 auto;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden">
-      <div style="background:${accent};padding:20px 28px">
+      <div style="background:${accent};padding:22px 28px;text-align:center">
+        <img src="${LOGO_URL}" alt="QMS" width="60" style="display:block;margin:0 auto 12px;width:60px;max-width:60px;height:auto;border:0" />
         <h2 style="margin:0;color:#ffffff;font-size:20px;text-transform:uppercase">${heading}</h2>
-        ${subheading ? `<p style="margin:4px 0 0;color:#e2e8f0;font-size:13px">${subheading}</p>` : ""}
+        ${subheading ? `<p style="margin:4px 0 0;color:rgba(255,255,255,.85);font-size:13px">${subheading}</p>` : ""}
       </div>
       <div style="padding:22px 28px 2px">
         <p style="margin:0 0 4px;font-size:15px;color:#0f172a">Hi <strong>${escapeHtml(greeting) || "there"}</strong>,</p>
         <p style="margin:0 0 20px;font-size:13px;color:#334155;line-height:1.55">${intro}</p>
         ${body}
-        ${consoleButton()}
+        ${admin ? consoleButton() : ""}
       </div>
       ${footer()}
     </div>`;
@@ -204,6 +237,8 @@ const renderNewRequest = (req, res) => {
     ``,
     `Message:`,
     `${stripHtml(b.message) || "N/A"}`,
+    ``,
+    `Admin Console: ${CONSOLE_URL}`,
     textFooter(),
   ].join("\n");
 
@@ -214,6 +249,7 @@ const renderNewRequest = (req, res) => {
     greeting: b.name,
     intro:
       "A new request has been submitted to the QMS. Please review it in the admin console.",
+    admin: true,
     body:
       detailsTable(b, "name", "email") +
       titleBlock(b) +
@@ -247,6 +283,8 @@ const renderAssignment = (req, res) => {
     ``,
     `Title:`,
     `${b.title || "N/A"}`,
+    ``,
+    `Admin Console: ${CONSOLE_URL}`,
     textFooter(),
   ].join("\n");
 
@@ -257,6 +295,7 @@ const renderAssignment = (req, res) => {
     greeting: b.assignee_name,
     intro:
       "A new QMS request has been assigned to you. Please log in to the QMS console to view the full details and start working on your task.",
+    admin: true,
     body: detailsTable(b, "name", "email") + titleBlock(b),
   });
 
@@ -303,6 +342,7 @@ const renderRequesterUpdate = (req, res, outcome) => {
     textFooter(),
   ].join("\n");
 
+  // Client-facing: no admin console button.
   const html = layout({
     accent,
     heading,
@@ -317,6 +357,53 @@ const renderRequesterUpdate = (req, res, outcome) => {
 
   return sendMail(req, res, {
     subject: `[QMS] Request ${isCompleted ? "Completed" : "Declined"} - ${b.title || ""}`,
+    text: emailText,
+    html,
+  });
+};
+
+const renderForgotPassword = (req, res) => {
+  const b = req.body || {};
+
+  const emailText = [
+    "PASSWORD RECOVERY",
+    "",
+    `Hi ${b.name || "there"},`,
+    "",
+    "You requested your QMS sign-in details. Use the password below to sign in.",
+    "",
+    `Email    : ${b.email || "N/A"}`,
+    `Password : ${b.password || "N/A"}`,
+    "",
+    `Sign in: ${LOGIN_URL}`,
+    "",
+    "For your security, please change your password after signing in.",
+    textFooter(),
+  ].join("\n");
+
+  // Client-facing: no admin console button.
+  const html = layout({
+    accent: "linear-gradient(90deg,#1d4ed8,#0891b2)",
+    heading: "Password Recovery",
+    subheading: "Your QMS sign-in details",
+    greeting: b.name,
+    intro:
+      "You requested your QMS sign-in details. Use the password below to sign in.",
+    body: `
+      <div style="border-top:1px solid #e2e8f0;padding-top:16px">
+        ${field("Email", escapeHtml(b.email) || "N/A")}
+        <div style="border:1px dashed #cbd5e1;background:#f8fafc;border-radius:8px;padding:12px 16px">
+          <div style="font-size:11px;font-weight:bold;letter-spacing:.4px;text-transform:uppercase;color:#64748b">Password</div>
+          <div style="font-size:16px;font-family:'Courier New',Courier,monospace;color:#0f172a;font-weight:bold;word-break:break-all">${escapeHtml(b.password) || "N/A"}</div>
+        </div>
+      </div>
+      ${loginButton()}
+      <p style="margin:14px 0 0;font-size:12px;color:#64748b">For your security, please change your password after signing in.</p>`,
+  });
+
+  return sendMail(req, res, {
+    to: b.email,
+    subject: "[QMS] Password Recovery",
     text: emailText,
     html,
   });
@@ -343,8 +430,9 @@ const sendMail = async (req, res, opts) => {
   });
 
   try {
-    // The Task Assigned email is sent to the assignee; every other email goes
-    // to the single QMS mailbox.
+    // The Task Assigned email goes to the assignee and the Password Recovery
+    // email goes to the client; every other email goes to the single QMS
+    // mailbox.
     const recipients =
       opts.to ||
       process.env.NOTIFY_TO ||
