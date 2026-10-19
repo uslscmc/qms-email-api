@@ -4,6 +4,5 @@
         "api/notify.js": {
             "maxDuration": 10
         }
-    },
-    "builds": []
+    }
 }
