@@ -23,13 +23,13 @@ Content-Type: application/json
 
 ### Events
 
-| `event`                   | Email sent                | Recipient                          |
-| ------------------------- | ------------------------- | ---------------------------------- |
-| `assignment`              | "Task Assignment Notice"  | the assignee (`assignee_email`)    |
-| `complete` / `completed`  | "Request Completed"       | `qms@usls.edu.ph`                  |
-| `decline` / `declined`    | "Request Declined"        | `qms@usls.edu.ph`                  |
-| `forgot_password`         | "Password Recovery"       | the client (`email`)               |
-| _anything else / omitted_ | "New QMS Request"         | `qms@usls.edu.ph`                  |
+| `event`                   | Email sent                | Recipient                                                                          |
+| ------------------------- | ------------------------- | ---------------------------------------------------------------------------------- |
+| `assignment`              | "Task Assignment Notice"  | the assignee (`assignee_email`)                                                    |
+| `complete` / `completed`  | "Request Completed"       | the requester (`requester_email`), CC the assignee, BCC the QMS mailbox           |
+| `decline` / `declined`    | "Request Declined"        | the requester (`requester_email`), CC the assignee, BCC the QMS mailbox           |
+| `forgot_password`         | "Password Recovery"       | the client (`email`)                                                               |
+| _anything else / omitted_ | "New QMS Request"         | `qms@usls.edu.ph`                                                                  |
 
 Every email shares one layout:
 
@@ -74,6 +74,8 @@ fields instead:
   "event": "complete",
   "requester_name": "Juan Dela Cruz",
   "requester_email": "juan@usls.edu.ph",
+  "assignee_name": "Staff Name",
+  "assignee_email": "staff@usls.edu.ph",
   "classification": "Faculty",
   "contact": "0917...",
   "title": "Poster for Founders Week",
@@ -84,9 +86,14 @@ fields instead:
 }
 ```
 
+The requester is the **To** recipient, the assignee is **CC**'d, and the QMS
+mailbox is **BCC**'d so CMC keeps a copy. An address that already appears in
+`to` is dropped from `cc`/`bcc`, so nobody receives the same message twice.
+
 `"recipients": [...]` is ignored. The `assignment` event sends to
-`assignee_email` and `forgot_password` sends to `email`; every other event goes
-to the single QMS mailbox. There is no Reply-To header.
+`assignee_email`, `forgot_password` sends to `email`, and the status-update
+events send to `requester_email`; every other event goes to the single QMS
+mailbox. There is no Reply-To header.
 
 Password recovery payload (client receives their stored password):
 

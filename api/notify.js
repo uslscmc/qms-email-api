@@ -356,6 +356,12 @@ const renderRequesterUpdate = (req, res, outcome) => {
   });
 
   return sendMail(req, res, {
+    // The client who submitted the request is the primary recipient. The
+    // staff member assigned to the task is CC'd so they keep a record of the
+    // outcome, and CMC keeps a blind copy on the QMS mailbox.
+    to: b.requester_email,
+    cc: b.assignee_email,
+    bcc: process.env.NOTIFY_TO || process.env.SMTP_USER,
     subject: `[QMS] Request ${isCompleted ? "Completed" : "Declined"} - ${b.title || ""}`,
     text: emailText,
     html,
@@ -415,6 +421,15 @@ const renderForgotPassword = (req, res) => {
 /* transport                                                          */
 /* ------------------------------------------------------------------ */
 
+// Normalise a recipient value into a flat list of trimmed addresses.
+// Accepts a string ("a@x, b@x"), an array, or a single address.
+const normalizeList = (value) =>
+  []
+    .concat(value || [])
+    .flatMap((v) => String(v).split(","))
+    .map((v) => v.trim())
+    .filter(Boolean);
+
 const sendMail = async (req, res, opts) => {
   // Port 465 uses implicit TLS (secure: true). Ports 587/25 use STARTTLS
   // (secure: false) and are upgraded automatically by nodemailer. Deriving
@@ -441,13 +456,32 @@ const sendMail = async (req, res, opts) => {
       process.env.SMTP_USER ||
       "qms@usls.edu.ph";
 
-    await transporter.sendMail({
+    // An address already in the To list is dropped, otherwise nodemailer would
+    // deliver the same message twice to that person.
+    const toList = normalizeList(recipients).map((a) => a.toLowerCase());
+    const ccList = normalizeList(opts.cc)
+      .map((a) => a.toLowerCase())
+      .filter((a) => !toList.includes(a));
+    const bccList = normalizeList(opts.bcc)
+      .map((a) => a.toLowerCase())
+      .filter((a) => !toList.includes(a) && !ccList.includes(a));
+
+    const mail = {
       from: `"QMS Notifications" <${process.env.SMTP_USER}>`,
       to: recipients,
       subject: opts.subject,
       text: opts.text,
       html: opts.html,
-    });
+    };
+
+    if (ccList.length) {
+      mail.cc = ccList.join(", ");
+    }
+    if (bccList.length) {
+      mail.bcc = bccList.join(", ");
+    }
+
+    await transporter.sendMail(mail);
     return res
       .status(200)
       .json({ status: "success", message: "Notification sent" });
