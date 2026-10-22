@@ -26,8 +26,8 @@ Content-Type: application/json
 | `event`                   | Email sent                | Recipient                                                                          |
 | ------------------------- | ------------------------- | ---------------------------------------------------------------------------------- |
 | `assignment`              | "Task Assignment Notice"  | the assignee (`assignee_email`)                                                    |
-| `complete` / `completed`  | "Request Completed"       | the requester (`requester_email`), CC the assignee, BCC the QMS mailbox           |
-| `decline` / `declined`    | "Request Declined"        | the requester (`requester_email`), CC the assignee, BCC the QMS mailbox           |
+| `complete` / `completed`  | "Request Completed"       | the requester (`requester_email`), BCC the assignee and the QMS mailbox             |
+| `decline` / `declined`    | "Request Declined"        | the requester (`requester_email`), BCC the assignee and the QMS mailbox             |
 | `forgot_password`         | "Password Recovery"       | the client (`email`)                                                               |
 | _anything else / omitted_ | "New QMS Request"         | `qms@usls.edu.ph`                                                                  |
 
@@ -86,9 +86,10 @@ fields instead:
 }
 ```
 
-The requester is the **To** recipient, the assignee is **CC**'d, and the QMS
-mailbox is **BCC**'d so CMC keeps a copy. An address that already appears in
-`to` is dropped from `cc`/`bcc`, so nobody receives the same message twice.
+The requester is the **To** recipient. The assignee and the QMS mailbox are
+**BCC**'d, so the client never sees who handled the request while CMC still
+keeps a copy. An address that already appears in `to` is dropped from `bcc`,
+so nobody receives the same message twice.
 
 `"recipients": [...]` is ignored. The `assignment` event sends to
 `assignee_email`, `forgot_password` sends to `email`, and the status-update

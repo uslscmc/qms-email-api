@@ -357,11 +357,11 @@ const renderRequesterUpdate = (req, res, outcome) => {
 
   return sendMail(req, res, {
     // The client who submitted the request is the primary recipient. The
-    // staff member assigned to the task is CC'd so they keep a record of the
-    // outcome, and CMC keeps a blind copy on the QMS mailbox.
+    // staff member assigned to the task is BCC'd (not CC'd) so the client
+    // cannot see who handled their request, and CMC keeps a blind copy of
+    // every status update on the QMS mailbox.
     to: b.requester_email,
-    cc: b.assignee_email,
-    bcc: process.env.NOTIFY_TO || process.env.SMTP_USER,
+    bcc: [b.assignee_email, process.env.NOTIFY_TO || process.env.SMTP_USER],
     subject: `[QMS] Request ${isCompleted ? "Completed" : "Declined"} - ${b.title || ""}`,
     text: emailText,
     html,
@@ -422,13 +422,16 @@ const renderForgotPassword = (req, res) => {
 /* ------------------------------------------------------------------ */
 
 // Normalise a recipient value into a flat list of trimmed addresses.
-// Accepts a string ("a@x, b@x"), an array, or a single address.
+// Accepts a string ("a@x, b@x"), an array, or a single address. Empty and
+// null/undefined entries are dropped, so a missing field never turns into a
+// literal "undefined" address in the header.
 const normalizeList = (value) =>
   []
     .concat(value || [])
+    .filter((v) => v !== null && v !== undefined)
     .flatMap((v) => String(v).split(","))
     .map((v) => v.trim())
-    .filter(Boolean);
+    .filter((v) => v !== "" && v !== "undefined" && v !== "null");
 
 const sendMail = async (req, res, opts) => {
   // Port 465 uses implicit TLS (secure: true). Ports 587/25 use STARTTLS
