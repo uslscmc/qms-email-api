@@ -11,6 +11,7 @@ QMS (CodeIgniter)                      Vercel                    Gmail SMTP
 ────────────────                      ──────                    ──────────
 notifyNewRequest()        ─┐
 notifyAssignedTask()      ─┼─ POST JSON ─► /api/notify ─► sendMail() ─► 📧
+notifyReassigner()        ─┤
 notifyRequester()         ─┘
 ```
 
@@ -26,6 +27,7 @@ Content-Type: application/json
 | `event`                   | Email sent                | Recipient                                                                          |
 | ------------------------- | ------------------------- | ---------------------------------------------------------------------------------- |
 | `assignment`              | "Task Assignment Notice"  | the assignee (`assignee_email`)                                                    |
+| `reassignment`            | "Task Reassigned"         | the previous assignee (`previous_assignee_email`)                                  |
 | `complete` / `completed`  | "Request Completed"       | the requester (`requester_email`), BCC the assignee and the QMS mailbox             |
 | `decline` / `declined`    | "Request Declined"        | the requester (`requester_email`), BCC the assignee and the QMS mailbox             |
 | `forgot_password`         | "Password Recovery"       | the client (`email`)                                                               |
@@ -40,9 +42,9 @@ Every email shares one layout:
 - a footer linking to **Center for Marketing and Communications** and
   **Privacy Policy**
 
-The **QMS admin console** button is shown only on the two admin-facing emails
-(New Request and Task Assigned). Completed, Declined and Password Recovery are
-client-facing and have no console button.
+The **QMS admin console** button is shown only on the admin-facing emails
+(New Request, Task Assigned and Task Reassigned). Completed, Declined and
+Password Recovery are client-facing and have no console button.
 
 `classification` is displayed as **Office** (it holds the office/department/college).
 
@@ -63,6 +65,28 @@ client-facing and have no console button.
   "message": "Please make a poster...",
   "assignee_name": "Staff Name",
   "assignee_email": "staff@usls.edu.ph"
+}
+```
+
+For a reassignment, send the request fields plus the previous and new assignee:
+
+```json
+{
+  "event": "reassignment",
+  "code": "QMS-2026-0001",
+  "name": "Juan Dela Cruz",
+  "email": "juan@usls.edu.ph",
+  "classification": "Faculty",
+  "contact": "0917...",
+  "title": "Poster for Founders Week",
+  "patype": 1,
+  "platform": ["Facebook", "Instagram"],
+  "date": "2026-10-30",
+  "message": "Please make a poster...",
+  "previous_assignee_name": "Previous Staff",
+  "previous_assignee_email": "previous@usls.edu.ph",
+  "assignee_name": "New Staff",
+  "assignee_email": "new@usls.edu.ph"
 }
 ```
 
@@ -92,9 +116,10 @@ keeps a copy. An address that already appears in `to` is dropped from `bcc`,
 so nobody receives the same message twice.
 
 `"recipients": [...]` is ignored. The `assignment` event sends to
-`assignee_email`, `forgot_password` sends to `email`, and the status-update
-events send to `requester_email`; every other event goes to the single QMS
-mailbox. There is no Reply-To header.
+`assignee_email`, `reassignment` sends to `previous_assignee_email`,
+`forgot_password` sends to `email`, and the status-update events send to
+`requester_email`; every other event goes to the single QMS mailbox. There is
+no Reply-To header.
 
 Password recovery payload (client receives their stored password):
 

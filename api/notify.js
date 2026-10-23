@@ -40,6 +40,12 @@ module.exports = async function handler(req, res) {
     return renderAssignment(req, res);
   }
 
+  // Sent by Dashboard::notifyReassigner() after a task is transferred to
+  // another staff member. The previous assignee is the recipient.
+  if (event === "reassignment" || event === "reassigned") {
+    return renderReassignment(req, res);
+  }
+
   // The CI4 app sends event "complete" or "decline" (see Dashboard::notifyRequester)
   if (event === "complete" || event === "completed") {
     return renderRequesterUpdate(req, res, "completed");
@@ -302,6 +308,64 @@ const renderAssignment = (req, res) => {
   return sendMail(req, res, {
     to: b.assignee_email,
     subject: `[QMS] Task Assigned - ${b.title || ""}`,
+    text: emailText,
+    html,
+  });
+};
+
+const renderReassignment = (req, res) => {
+  const b = req.body || {};
+
+  const newAssigneeName = escapeHtml(b.assignee_name) || "another staff member";
+  const newAssigneeEmail = escapeHtml(b.assignee_email);
+  const newAssignee = newAssigneeEmail
+    ? `${newAssigneeName} (${newAssigneeEmail})`
+    : newAssigneeName;
+
+  const emailText = [
+    `TASK REASSIGNMENT CONFIRMATION`,
+    ``,
+    `Hi ${b.previous_assignee_name || "there"},`,
+    ``,
+    `This confirms that you reassigned the following QMS request to ${newAssignee}. It is no longer in your task list.`,
+    ``,
+    `Requester       : ${b.name || "N/A"}`,
+    `Email           : ${b.email || "N/A"}`,
+    `Office          : ${b.classification || "N/A"}`,
+    `Contact         : ${b.contact || "N/A"}`,
+    `Desk            : ${typeLabel(b)}`,
+    `Platform        : ${(b.platform || []).join(", ") || "N/A"}`,
+    `Date Needed     : ${formatDate(b.date)}`,
+    `New Assignee    : ${newAssignee}`,
+    ``,
+    `Title:`,
+    `${b.title || "N/A"}`,
+    ``,
+    `Instructions:`,
+    `${stripHtml(b.message) || "N/A"}`,
+    ``,
+    `Admin Console: ${CONSOLE_URL}`,
+    textFooter(),
+  ].join("\n");
+
+  const html = layout({
+    accent: "linear-gradient(90deg,#475569,#0f172a)",
+    heading: "Task Reassigned",
+    subheading: "This task is no longer assigned to you",
+    greeting: b.previous_assignee_name,
+    intro: `This confirms that you reassigned the following QMS request to <strong>${newAssigneeName}</strong>${newAssigneeEmail ? ` (${newAssigneeEmail})` : ""}. It is no longer in your task list.`,
+    admin: true,
+    body:
+      detailsTable(b, "name", "email") +
+      `<div style="border-top:1px solid #e2e8f0;padding-top:16px;margin-top:16px">${field("New Assignee", newAssignee)}</div>` +
+      titleBlock(b) +
+      messageBlock("Instructions", b.message),
+  });
+
+  return sendMail(req, res, {
+    // The staff member who performed the reassignment is the recipient.
+    to: b.previous_assignee_email,
+    subject: `[QMS] Task Reassigned - ${b.title || ""}`,
     text: emailText,
     html,
   });
